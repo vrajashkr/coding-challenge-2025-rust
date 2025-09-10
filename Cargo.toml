@@ -1,0 +1,12 @@
+[package]
+name = "skip_list"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "main"
+path = "src/bin/main.rs"
+
+[lib]
+name = "skip_list"
+path = "src/lib.rs"
