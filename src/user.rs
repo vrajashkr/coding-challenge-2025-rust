@@ -104,7 +104,7 @@ pub fn query_idx(_parameter: &Parameter, index: &[u8], query: &i32) -> Option<u6
     if *query >= block_idx.min && *query <= block_idx.max {
         let result = match block_idx.counts.get(query) {
             Some(count) => Some(*count as u64),
-            None => None,
+            None => Some(0),
         };
 
         return result;
