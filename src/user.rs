@@ -5,15 +5,15 @@ use crate::parameter::Parameter;
 // index representation is:
 // i32 - min
 // i32 - max
-// u64 - number of entries
+// u32 - number of entries
 // multiple instances of:
 // i32 - value
-// u64 - count
+// u32 - count
 
 struct BlockIndex {
     min: i32,
     max: i32,
-    counts: HashMap<i32, u64>,
+    counts: HashMap<i32, u32>,
 }
 
 impl Into<Box<[u8]>> for BlockIndex {
@@ -39,19 +39,19 @@ impl From<&[u8]> for BlockIndex {
     fn from(value: &[u8]) -> Self {
         let min = i32::from_le_bytes(value[0..4].try_into().unwrap());
         let max = i32::from_le_bytes(value[4..8].try_into().unwrap());
-        let num_entries = u64::from_le_bytes(value[8..16].try_into().unwrap());
+        let num_entries = u32::from_le_bytes(value[8..12].try_into().unwrap());
 
-        let mut map: HashMap<i32, u64> = HashMap::new();
+        let mut map: HashMap<i32, u32> = HashMap::new();
 
-        // starts reading at byte 16 offset
-        // each entry is 12 bytes
+        // starts reading at byte 12 offset
+        // each entry is 8 bytes
         for i in 0..num_entries as usize {
-            let entry_start = 16 + i * 8;
+            let entry_start = 12 + i * 8;
             let key_end = entry_start + 4;
             let value_start = key_end.clone();
-            let entry_end = value_start + 8;
+            let entry_end = value_start + 4;
             let key = i32::from_le_bytes(value[entry_start..key_end].try_into().unwrap());
-            let value = u64::from_le_bytes(value[value_start..entry_end].try_into().unwrap());
+            let value = u32::from_le_bytes(value[value_start..entry_end].try_into().unwrap());
 
             map.insert(key, value);
         }
@@ -71,7 +71,7 @@ pub fn build_idx(_parameter: &Parameter, data: &[i32]) -> Box<[u8]> {
     let mut min = i32::MAX;
     let mut max = i32::MIN;
 
-    let mut map: HashMap<i32, u64> = HashMap::new();
+    let mut map: HashMap<i32, u32> = HashMap::new();
 
     data.into_iter().for_each(|num| {
         if *num > max {
@@ -101,9 +101,9 @@ pub fn query_idx(_parameter: &Parameter, index: &[u8], query: &i32) -> Option<u6
 
     let block_idx: BlockIndex = index.into();
 
-    if *query > block_idx.min && *query < block_idx.max {
+    if *query >= block_idx.min && *query <= block_idx.max {
         let result = match block_idx.counts.get(query) {
-            Some(count) => Some(*count),
+            Some(count) => Some(*count as u64),
             None => None,
         };
 
