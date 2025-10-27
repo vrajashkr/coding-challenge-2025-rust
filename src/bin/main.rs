@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let score = (n_skipped as i64 * parameter.factor_skip) - (total_index_size_kb as i64 * parameter.factor_size);
     println!("storage size: {} {}", total_index_size_kb, total_index_size_kb as i64 * parameter.factor_size);
     println!("num skips: {} {}", n_skipped, n_skipped as i64 * parameter.factor_skip);
-    println!("total score: {}", score / max_score);
+    println!("total score: {}", score as f64 / max_score as f64 * 100f64);
     Ok(())
 }
 
@@ -74,12 +74,10 @@ fn load_data(file_path: &Path) -> io::Result<Vec<Vec<i32>>> {
 
     let mut buf8 = [0u8; 8];
     file.read_exact(&mut buf8)?;
-    let n = u64::from_le_bytes(buf8) as usize;
-
-    file.read_exact(&mut buf8)?;
     let n_block = u64::from_le_bytes(buf8) as usize;
-
-    let chunk_size = (n + n_block - 1) / n_block;
+    file.read_exact(&mut buf8)?;
+    let chunk_size = u64::from_le_bytes(buf8) as usize;
+    let n = n_block.checked_mul(chunk_size).expect("n_block * chunk_size overflow");
     let mut blocks: Vec<Vec<i32>> = Vec::with_capacity(n_block);
 
     let mut buf4 = [0u8; 4];
